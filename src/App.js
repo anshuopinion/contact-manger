@@ -33,9 +33,12 @@ const App = () => {
     const fetchContacts = async () => {
       const data = await getAllContacts();
       const tempArray = [];
-      Object.entries(data).forEach(([key, value]) => {
-        tempArray.push({ id: key, name: value.name, email: value.email });
-      });
+
+      if (data !== null) {
+        Object.entries(data).forEach(([key, value]) => {
+          tempArray.push({ id: key, name: value.name, email: value.email });
+        });
+      }
 
       setContacts(tempArray);
     };
@@ -138,15 +141,13 @@ const App = () => {
         </Box>
         <Box p="4">
           {searchContacts.map((contact) => (
-            <Link to={`/contact/${contact.id}`}>
-              <ContactCard
-                getContactId={getContactId}
-                onOpen={onOpenEdit}
-                contact={contact}
-                key={contact.id}
-                deleteContact={deleteContact}
-              />
-            </Link>
+            <ContactCard
+              getContactId={getContactId}
+              onOpen={onOpenEdit}
+              contact={contact}
+              key={contact.id}
+              deleteContact={deleteContact}
+            />
           ))}
         </Box>
       </Box>
