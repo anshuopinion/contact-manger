@@ -1,39 +1,55 @@
 import { Button } from "@chakra-ui/button";
-import { v4 as uuidv4 } from "uuid";
 import { useDisclosure } from "@chakra-ui/hooks";
 import { AddIcon, Search2Icon } from "@chakra-ui/icons";
 import { Image } from "@chakra-ui/image";
 import { Input, InputGroup, InputLeftElement } from "@chakra-ui/input";
-
+import {
+  addContactOnServer,
+  getAllContacts,
+  updateContactOnServer,
+  deleteContactOnServer,
+} from "./network";
 import { Heading, Flex, Box } from "@chakra-ui/layout";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import ContactCard from "./components/ContactCard";
 import ContactForm from "./components/ContactForm";
 import Kmodal from "./components/Kmodal";
+import { Link } from "react-router-dom";
 
 const App = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+
   const {
     isOpen: isOpenEdit,
     onOpen: onOpenEdit,
     onClose: onCloseEdit,
   } = useDisclosure();
   const [searchData, setSearchData] = useState("");
-  const [contacts, setContacts] = useState([
-    { name: "anshu", email: "anshu@gmail.com", id: "1" },
-    { name: "anshu1", email: "anshu1@gmail.com", id: "2" },
-    { name: "anshu3", email: "anshu2@gmail.com", id: "3" },
-    { name: "anshu2", email: "anshu3@gmail.com", id: "4" },
-    { name: "anshu4", email: "anshu4@gmail.com", id: "5" },
-  ]);
+  const [contacts, setContacts] = useState([]);
   const [contactId, setContactId] = useState();
-  const addNewContact = (name, email) => {
+
+  useEffect(() => {
+    const fetchContacts = async () => {
+      const data = await getAllContacts();
+      const tempArray = [];
+      Object.entries(data).forEach(([key, value]) => {
+        tempArray.push({ id: key, name: value.name, email: value.email });
+      });
+
+      setContacts(tempArray);
+    };
+    fetchContacts();
+  }, []);
+
+  const addNewContact = async (name, email) => {
     if (
       contacts.findIndex((contact) => contact.email === email) === -1 &&
       email !== ""
     ) {
-      setContacts([...contacts, { name, email, id: uuidv4() }]);
+      const data = await addContactOnServer(name, email);
+      console.log(data);
+      setContacts([...contacts, { name, email, id: data.name }]);
     }
   };
 
@@ -45,15 +61,22 @@ const App = () => {
     setContactId(id);
   };
 
-  const updateContact = (name, email, id) => {
+  const updateContact = async (name, email, id) => {
+    const data = await updateContactOnServer(name, email, id);
+
     setContacts((prev) => [
       ...contacts.filter((contact) => contact.id !== id),
-      { name, email, id },
+      { name: data.name, email: data.email, id },
     ]);
   };
 
-  const deleteContact = (id) => {
-    setContacts((prev) => [...contacts.filter((contact) => contact.id !== id)]);
+  const deleteContact = async (id) => {
+    const data = await deleteContactOnServer(id);
+    if (data === null) {
+      setContacts((prev) => [
+        ...contacts.filter((contact) => contact.id !== id),
+      ]);
+    }
   };
   let selectContact = contacts.find((contact) => contact.id === contactId);
 
@@ -115,13 +138,15 @@ const App = () => {
         </Box>
         <Box p="4">
           {searchContacts.map((contact) => (
-            <ContactCard
-              getContactId={getContactId}
-              onOpen={onOpenEdit}
-              contact={contact}
-              key={contact.id}
-              deleteContact={deleteContact}
-            />
+            <Link to={`/contact/${contact.id}`}>
+              <ContactCard
+                getContactId={getContactId}
+                onOpen={onOpenEdit}
+                contact={contact}
+                key={contact.id}
+                deleteContact={deleteContact}
+              />
+            </Link>
           ))}
         </Box>
       </Box>
